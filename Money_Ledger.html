@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Money Ledger</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f6f8;color:#17202a}
+header{padding:28px 20px 18px;background:white;position:sticky;top:0;z-index:2;border-bottom:1px solid #e6e9ed}
+h1{margin:0;font-size:28px}.sub{color:#667085;margin-top:5px}
+main{padding:18px;max-width:700px;margin:auto}.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card,.panel{background:white;border-radius:18px;padding:20px;box-shadow:0 3px 12px #0000000d}
+.card{min-height:120px;cursor:pointer}.icon{font-size:30px}.label{font-weight:700;font-size:17px;margin-top:10px}
+.balance{grid-column:1/-1;background:#17202a;color:white}.balance .amount{font-size:34px;font-weight:800;margin-top:8px}
+button{border:0;border-radius:13px;padding:14px 18px;font-size:16px;font-weight:700;cursor:pointer}
+.primary{background:#17202a;color:white}.in{background:#e7f7ed;color:#147a3d}.out{background:#fff0f0;color:#b42318}
+.actions{display:flex;gap:10px;margin:15px 0}.actions button{flex:1}
+input,select{width:100%;padding:14px;border:1px solid #d0d5dd;border-radius:12px;font-size:16px;margin:7px 0 12px;background:white}
+.hidden{display:none}.row{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #eee}
+.small{font-size:13px;color:#667085}.green{color:#147a3d;font-weight:700}.red{color:#b42318;font-weight:700}
+.back{margin-bottom:14px;background:#eef1f4}.empty{text-align:center;color:#667085;padding:30px 10px}
+</style>
+</head>
+<body>
+<header><h1>💰 Money Ledger</h1><div class="sub">Simple cash & bank record</div></header>
+<main id="home">
+  <div class="cards">
+    <div class="card balance"><div class="icon">💰</div><div class="label">Total Balance</div><div class="amount" id="total">₹0.00</div></div>
+    <div class="card" onclick="openLedger('cash')"><div class="icon">💵</div><div class="label">Cash Ledger</div><div class="small" id="cashBal">₹0.00</div></div>
+    <div class="card" onclick="openLedger('bank')"><div class="icon">🏦</div><div class="label">Bank Ledger</div><div class="small" id="bankBal">₹0.00</div></div>
+  </div>
+</main>
+<main id="ledger" class="hidden">
+  <button class="back" onclick="goHome()">← Home</button>
+  <div class="panel">
+    <h2 id="title">Cash Ledger</h2><div id="ledgerBalance" style="font-size:28px;font-weight:800">₹0.00</div>
+    <div class="actions"><button class="in" onclick="showForm('in')">➕ Money In</button><button class="out" onclick="showForm('out')">➖ Money Out</button></div>
+  </div>
+  <div class="panel hidden" id="form">
+    <h3 id="formTitle">Money In</h3>
+    <input id="amount" type="number" inputmode="decimal" placeholder="Amount (₹)">
+    <input id="desc" type="text" placeholder="Description">
+    <button class="primary" onclick="saveEntry()">Save Entry</button>
+  </div>
+  <div class="panel" style="margin-top:14px"><h3>Transactions</h3><div id="list"></div></div>
+</main>
+<script>
+const KEY='money-ledger-v1'; let data=JSON.parse(localStorage.getItem(KEY)||'{"cash":[],"bank":[]}'); let current='cash', type='in';
+const money=n=>'₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function bal(k){return data[k].reduce((s,x)=>s+(x.type==='in'?x.amount:-x.amount),0)}
+function refresh(){document.getElementById('cashBal').textContent=money(bal('cash'));document.getElementById('bankBal').textContent=money(bal('bank'));document.getElementById('total').textContent=money(bal('cash')+bal('bank'))}
+function openLedger(k){current=k;document.getElementById('home').classList.add('hidden');document.getElementById('ledger').classList.remove('hidden');document.getElementById('title').textContent=k==='cash'?'Cash Ledger':'Bank Ledger';render()}
+function goHome(){document.getElementById('ledger').classList.add('hidden');document.getElementById('home').classList.remove('hidden');document.getElementById('form').classList.add('hidden');refresh()}
+function showForm(t){type=t;document.getElementById('form').classList.remove('hidden');document.getElementById('formTitle').textContent=t==='in'?'Money In':'Money Out';document.getElementById('amount').focus()}
+function saveEntry(){let a=parseFloat(document.getElementById('amount').value),d=document.getElementById('desc').value.trim();if(!a||a<=0){alert('Enter an amount');return}data[current].unshift({type,amount:a,desc:d,date:new Date().toLocaleString('en-IN')});localStorage.setItem(KEY,JSON.stringify(data));document.getElementById('amount').value='';document.getElementById('desc').value='';document.getElementById('form').classList.add('hidden');render()}
+function render(){document.getElementById('ledgerBalance').textContent=money(bal(current));let l=document.getElementById('list');if(!data[current].length){l.innerHTML='<div class="empty">No transactions yet.<br>Add Money In or Money Out.</div>';return}l.innerHTML=data[current].map(x=>`<div class="row"><div><b>${x.desc||'No description'}</b><div class="small">${x.date}</div></div><div class="${x.type==='in'?'green':'red'}">${x.type==='in'?'+':'-'}${money(x.amount)}</div></div>`).join('')}
+refresh();
+</script>
+</body>
+</html>
